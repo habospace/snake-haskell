@@ -46,4 +46,12 @@ checkWallCollision gs =
 
 
 checkBodyCollision :: Snake -> Bool
-checkBodyCollision = undefined
+checkBodyCollision s = overlap (nextXHeadPos, nextYHeadPos) (body s) where
+  nextXHeadPos = (first . head . body $ s) +
+                 (first . mapDirection . direction $ s)
+  nextYHeadPos = (second . head . body $ s) +
+                 (second . mapDirection . direction $ s)
+  overlap _ (x:[]) = False
+  overlap h (b:bs)
+    | h == b = True
+    | otherwise = overlap h bs
