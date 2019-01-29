@@ -18,7 +18,6 @@ data GameState = GameState {
     food :: (Int, Int)
   } deriving (Eq, Show)
 
-
 mapDirection :: Direction -> (Int, Int)
 mapDirection x
   | x == Up    = (0, 1)
@@ -26,27 +25,37 @@ mapDirection x
   | x == Left' = (1, 0)
   | otherwise  = (-1, 0)
 
-checkWallCollision :: GameState -> Bool
-checkWallCollision gs =
-  (nextYHeadPos <= topWall && nextYHeadPos >= bottomWall) &&
-  (nextXHeadPos <= rightWall) && (nextXHeadPos >= leftWall) where
-    topWall = height gs
-    bottomWall = 0
-    rightWall = width gs
-    leftWall = 0
-    nextXHeadPos = (fst . head . body . snake $ gs) +
-                   (fst . mapDirection . direction . snake $ gs)
-    nextYHeadPos = (snd . head . body . snake $ gs) +
-                   (snd . mapDirection . direction . snake $ gs)
-
-
-checkBodyCollision :: Snake -> Bool
-checkBodyCollision s = overlap (nextXHeadPos, nextYHeadPos) (body s) where
+getNextSnakeHeadPos :: Snake -> (Int, Int)
+getNextSnakeHeadPos s = (nextXHeadPos, nextYHeadPos) where
   nextXHeadPos = (fst . head . body $ s) +
                  (fst . mapDirection . direction $ s)
   nextYHeadPos = (snd . head . body $ s) +
                  (snd . mapDirection . direction $ s)
+
+checkWallCollision :: GameState -> Bool
+checkWallCollision gs =
+  (snd nextHeadPos >= topWall && snd nextHeadPos <= bottomWall) &&
+  (fst nextHeadPos >= rightWall) && (fst nextHeadPos <= leftWall) where
+    topWall = height gs
+    bottomWall = 0
+    rightWall = width gs
+    leftWall = 0
+    nextHeadPos = getNextSnakeHeadPos . snake $ gs
+
+checkBodyCollision :: Snake -> Bool
+checkBodyCollision s = overlap (fst nextHeadPos, snd nextHeadPos) (body s) where
+  nextHeadPos = getNextSnakeHeadPos s
+  overlap _ []     = False
   overlap _ (x:[]) = False
   overlap h (b:bs)
     | h == b = True
     | otherwise = overlap h bs
+
+moveSnake :: Snake -> Snake
+moveSnake s = Snake (nextHeadPos:(newTail . body $ s)) (direction s) where
+  nextHeadPos = getNextSnakeHeadPos s
+  newTail []     = []
+  newTail (x:[]) = []
+  newTail (x:xs) = x : newTail xs
+
+
