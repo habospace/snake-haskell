@@ -18,11 +18,6 @@ data GameState = GameState {
     food :: (Int, Int)
   } deriving (Eq, Show)
 
-first :: (a,b) -> a
-first (x, _) = x
-
-second :: (a, b) -> b
-second (_, x) = x
 
 mapDirection :: Direction -> (Int, Int)
 mapDirection x
@@ -39,18 +34,18 @@ checkWallCollision gs =
     bottomWall = 0
     rightWall = width gs
     leftWall = 0
-    nextXHeadPos = (first . head . body . snake $ gs) +
-                   (first . mapDirection . direction . snake $ gs)
-    nextYHeadPos = (second . head . body . snake $ gs) +
-                   (second . mapDirection . direction . snake $ gs)
+    nextXHeadPos = (fst . head . body . snake $ gs) +
+                   (fst . mapDirection . direction . snake $ gs)
+    nextYHeadPos = (snd . head . body . snake $ gs) +
+                   (snd . mapDirection . direction . snake $ gs)
 
 
 checkBodyCollision :: Snake -> Bool
 checkBodyCollision s = overlap (nextXHeadPos, nextYHeadPos) (body s) where
-  nextXHeadPos = (first . head . body $ s) +
-                 (first . mapDirection . direction $ s)
-  nextYHeadPos = (second . head . body $ s) +
-                 (second . mapDirection . direction $ s)
+  nextXHeadPos = (fst . head . body $ s) +
+                 (fst . mapDirection . direction $ s)
+  nextYHeadPos = (snd . head . body $ s) +
+                 (snd . mapDirection . direction $ s)
   overlap _ (x:[]) = False
   overlap h (b:bs)
     | h == b = True
