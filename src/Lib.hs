@@ -58,4 +58,7 @@ moveSnake s = Snake (nextHeadPos:(newTail . body $ s)) (direction s) where
   newTail (x:[]) = []
   newTail (x:xs) = x : newTail xs
 
+consumeFood :: Snake -> Snake
+consumeFood s = Snake (nextHeadPos:(body s)) (direction s) where
+  nextHeadPos = getNextSnakeHeadPos s
 
