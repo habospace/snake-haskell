@@ -80,25 +80,38 @@ consumeFood :: Snake -> Snake
 consumeFood s = Snake (nextHeadPos:(body s)) (direction s) where
   nextHeadPos = getNextSnakeHeadPos s
 
---updateGameAfterMoving :: GameState -> GameState
---updateGameAfterMoving gs =
---    GameState (width gs) (height gs) (consumeFood . snake $ gs)
---              ((+1) . score $ gs) (width gs, height gs) True True
+updateGameAfterMoving :: GameState -> GameState
+updateGameAfterMoving gs =
+    GameState (width gs) (height gs) (moveSnake . snake $ gs)
+              ((+1) . score $ gs) (width gs, height gs) False True
+
+updateGameDuringEating :: GameState -> GameState
+updateGameDuringEating gs =
+  GameState (width gs) (height gs) (consumeFood . snake $ gs)
+            ((+1) . score $ gs) (width gs, height gs) True True
 
 updateGameAfterEating :: GameState -> GameState
 updateGameAfterEating gs =
-  GameState (width gs) (height gs) (consumeFood . snake $ gs)
-            ((+1) . score $ gs) (width gs, height gs) True True
+  GameState (width gs) (height gs) (snake $ gs)
+            ((+1) . score $ gs) (width gs, height gs) False True
 
 setInGameState :: GameState -> Bool -> GameState
 setInGameState gs igs =
   GameState (width gs) (height gs) (snake gs)
             (score gs) (food gs) (justAte gs) igs
 
-{-tickGame :: GameState -> Wrap GameState
+tickGame :: GameState -> Wrap GameState
 tickGame gs = do
-  gs1 <- (\x -> if (checkWallCollision x) || (checkBodyCollision . snake $ x) then return (setInGameState x False) else return x) gs
-  gs2 <- (\x -> if ((inGame x) /= False) && (checkFoodConsumption x) then return (updateGameAfterEating x) else return x) gs1
-  (\x -> if (inGame x) == True then return (moveSnake x) else return x) gs2
--}
+  gs1 <- (\x ->
+    if (checkWallCollision x) || (checkBodyCollision . snake $ x)
+    then return (setInGameState x False)
+    else return x) gs
+  gs2 <- (\x ->
+    if ((inGame x) /= False) && (checkFoodConsumption x)
+    then return (updateGameDuringEating x)
+    else return x) gs1
+  (\x ->
+    if ((inGame x) == True) && (justAte x /= True)
+    then return (updateGameAfterMoving x)
+    else return (updateGameAfterEating x)) gs2
 
