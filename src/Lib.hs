@@ -1,117 +1,97 @@
+module Lib where
 
-data Wrap a = Wrap a deriving (Eq, Show)
+import System.Random
 
-instance Functor Wrap where
-  fmap f (Wrap x) = Wrap (f x)
-
-instance Applicative Wrap where
-  pure = Wrap
-  (<*>) (Wrap f) (Wrap x) = Wrap (f x)
-
-instance Monad Wrap where
-  return = pure
-  (>>=) (Wrap x) f = f x
+type X = Int
+type Y = Int
+type DeltaX = Int
+type DeltaY = Int
+type Location = (X, Y)
+type Movement = (DeltaX, DeltaY)
+type SnakeBody  = [Location]
+type FoodSpawnings = [Location]
 
 data Direction =
-    Up
-  | Down
-  | Left'
-  | Right' deriving (Eq, Show)
+    North
+  | South
+  | West
+  | East deriving (Eq, Show) 
 
 data Snake = Snake {
-    body :: [(Int, Int)],
-    direction :: Direction
+    body             :: SnakeBody,
+    nextDirection    :: Direction,
+    currentDirection :: Direction 
   } deriving (Eq, Show)
 
 data GameState = GameState {
-    width :: Int,
-    height :: Int,
-    snake :: Snake,
-    score :: Int,
-    food :: (Int, Int),
-    justAte :: Bool,
-    inGame :: Bool
+    gameWidth  :: Int,
+    gameHeight :: Int,
+    snake      :: Snake,
+    score      :: Int,
+    food       :: Location,
+    foods      :: FoodSpawnings,
+    gameOver   :: Bool
   } deriving (Eq, Show)
 
-mapDirection :: Direction -> (Int, Int)
-mapDirection x
-  | x == Up    = (0, 1)
-  | x == Down  = (0, -1)
-  | x == Left' = (1, 0)
-  | otherwise  = (-1, 0)
+initGame :: Int -> Int -> Direction -> GameState
+initGame w h d = spawnFood gs where
+    gs = GameState w h snake 0 (0, 0) fspwns False 
+    snake = Snake [(w `div` 2, h `div` 2)] d d
+    fspwns = zip xs ys 
+    xs = (mod <$> (randoms (mkStdGen 0))) <*> (pure w)
+    ys = (mod <$> (randoms (mkStdGen 1))) <*> (pure h)
 
-getNextSnakeHeadPos :: Snake -> (Int, Int)
-getNextSnakeHeadPos s = (nextXHeadPos, nextYHeadPos) where
-  nextXHeadPos = (fst . head . body $ s) +
-                 (fst . mapDirection . direction $ s)
-  nextYHeadPos = (snd . head . body $ s) +
-                 (snd . mapDirection . direction $ s)
+isIn :: (Foldable f, Eq a) => f a -> a -> Bool
+isIn xs x = foldr (\x' acc -> (x' == x || acc)) False xs
+    
+isInSnakeBody = isIn
+checkCollision = isIn
 
-checkWallCollision :: GameState -> Bool
-checkWallCollision gs =
-  (snd nextHeadPos >= topWall && snd nextHeadPos <= bottomWall) &&
-  (fst nextHeadPos >= rightWall) && (fst nextHeadPos <= leftWall) where
-    topWall = height gs
-    bottomWall = 0
-    rightWall = width gs
-    leftWall = 0
-    nextHeadPos = getNextSnakeHeadPos . snake $ gs
+removeLast :: [a] -> [a]
+removeLast [] = []
+removeLast (x:[]) = []
+removeLast (x:xs) = x : removeLast xs
 
-checkBodyCollision :: Snake -> Bool
-checkBodyCollision s = overlap (fst nextHeadPos, snd nextHeadPos) (body s) where
-  nextHeadPos = getNextSnakeHeadPos s
-  overlap _ []     = False
-  overlap _ (x:[]) = False
-  overlap h (b:bs)
-    | h == b = True
-    | otherwise = overlap h bs
+mapDirection :: Direction -> Movement
+mapDirection d = case d of
+  North -> (0, 1)
+  South -> (0, -1)
+  West  -> (-1, 0)
+  East  -> (1, 0)
 
-checkFoodConsumption :: GameState -> Bool
-checkFoodConsumption gs = (food gs) == (head . body . snake $ gs)
+spawnFood :: GameState -> GameState
+spawnFood gs@(GameState _ _ s@(Snake body _ _) _ _ (f:fs) _) = gs' where
+  gs' = if isInSnakeBody body f
+    then spawnFood $ gs {foods = fs}
+    else gs {food = f, foods = fs}
 
-moveSnake :: Snake -> Snake
-moveSnake s = Snake (nextHeadPos:(newTail . body $ s)) (direction s) where
-  nextHeadPos = getNextSnakeHeadPos s
-  newTail []     = []
-  newTail (x:[]) = []
-  newTail (x:xs) = x : newTail xs
+tick :: GameState -> GameState
+tick gs@(GameState w h (Snake body@((x, y):tail) d _) sc f fs gOver)
+    | gOver     = gs
+    | otherwise = if justAte then spawnFood gs' else gs' where
+        gs'      = GameState w h (Snake body' d d) sc' f fs gOver'
+        gOver'   = checkCollision tail head 
+        body'    = head : if justAte then body else removeLast body
+        sc'      = if justAte then sc + 1 else sc
+        justAte  = head == f  
+        head     = corrigate w h $ (x+dx, y+dy)
+        (dx, dy) = mapDirection d
 
-consumeFood :: Snake -> Snake
-consumeFood s = Snake (nextHeadPos:(body s)) (direction s) where
-  nextHeadPos = getNextSnakeHeadPos s
+corrigate :: Int -> Int -> Location -> Location
+corrigate w h (x, y) = (x', y') where
+  x' = if 1 <= x && x <= w then x else 
+      if x > w 
+        then x - w
+        else x + w
+  y' = if 1 <= y && y <= h then y else 
+      if y > h  
+        then y - h
+        else y + h
 
-updateGameAfterMoving :: GameState -> GameState
-updateGameAfterMoving gs =
-    GameState (width gs) (height gs) (moveSnake . snake $ gs)
-              ((+1) . score $ gs) (width gs, height gs) False True
-
-updateGameDuringEating :: GameState -> GameState
-updateGameDuringEating gs =
-  GameState (width gs) (height gs) (consumeFood . snake $ gs)
-            ((+1) . score $ gs) (width gs, height gs) True True
-
-updateGameAfterEating :: GameState -> GameState
-updateGameAfterEating gs =
-  GameState (width gs) (height gs) (snake $ gs)
-            ((+1) . score $ gs) (width gs, height gs) False True
-
-setInGameState :: GameState -> Bool -> GameState
-setInGameState gs igs =
-  GameState (width gs) (height gs) (snake gs)
-            (score gs) (food gs) (justAte gs) igs
-
-tickGame :: GameState -> Wrap GameState
-tickGame gs = do
-  gs1 <- (\x ->
-    if (checkWallCollision x) || (checkBodyCollision . snake $ x)
-    then return (setInGameState x False)
-    else return x) gs
-  gs2 <- (\x ->
-    if ((inGame x) /= False) && (checkFoodConsumption x)
-    then return (updateGameDuringEating x)
-    else return x) gs1
-  (\x ->
-    if ((inGame x) == True) && (justAte x /= True)
-    then return (updateGameAfterMoving x)
-    else return (updateGameAfterEating x)) gs2
-
+changeDirection :: Direction -> GameState -> GameState
+changeDirection d gs@(GameState _ _ s@(Snake _ _ d') _ _ _ _) =
+  case d of 
+    South -> if d' /= North then gs {snake = s {nextDirection = d}} else gs
+    North -> if d' /= South then gs {snake = s {nextDirection = d}} else gs
+    East  -> if d' /= West then gs {snake = s {nextDirection = d}} else gs
+    West  -> if d' /= East then gs {snake = s {nextDirection = d}} else gs
