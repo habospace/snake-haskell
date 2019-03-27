@@ -1,2 +1,3 @@
 # snakeHaskell
-the game snake in haskell
+
+The game snake implemented in haskell using the Gloss GUI library.
