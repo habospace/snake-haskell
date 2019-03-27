@@ -16,10 +16,8 @@ render sc fc frc w h offset side (GameState _ _ (Snake b _ _) _ f _ _) = img whe
 
     translatePic :: Float -> Float -> Float -> Location -> Picture -> Picture
     translatePic width height side (x, y) p = translate dx dy p where
-        x' = ((read $ (show x)) :: Float)
-        y' = ((read $ (show y)) :: Float)
-        dx = (- (width / 2) + (x' * side) - (side / 2)) + offset
-        dy = (- (height / 2) + (y' * side) - (side / 2)) + offset
+        dx = (- (width / 2) + ((fromIntegral x) * side) - (side / 2)) + offset
+        dy = (- (height / 2) + ((fromIntegral y) * side) - (side / 2)) + offset
 
 handleKeys :: Event -> GameState -> GameState
 handleKeys (EventKey (Char c) Down _ _) gs@(GameState w h _ _ _ _ _) = 
