@@ -38,8 +38,8 @@ initGame w h d = spawnFood gs where
     gs = GameState w h snake 0 (0, 0) fspwns False 
     snake = Snake [(w `div` 2, h `div` 2)] d d
     fspwns = zip xs ys 
-    xs = (mod <$> (randoms (mkStdGen 0))) <*> (pure w)
-    ys = (mod <$> (randoms (mkStdGen 1))) <*> (pure h)
+    xs = (max 1) <$> ((mod <$> (randoms (mkStdGen 2))) <*> (pure w))
+    ys = (max 1) <$> ((mod <$> (randoms (mkStdGen 3))) <*> (pure h))
 
 isIn :: (Foldable f, Eq a) => f a -> a -> Bool
 isIn xs x = foldr (\x' acc -> (x' == x || acc)) False xs
