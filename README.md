@@ -5,9 +5,9 @@ The source code of the game is divided into the following 3 modules:
 
 ```
  |src/
-   L Lib.hs (1.)
-   L UI.hs (2.)
-   L Main.hs (3.)
+   ├ Lib.hs (1.)
+   ├ UI.hs (2.)
+   └ Main.hs (3.)
 ```
 
 **(1.)** Lib.hs contains the logic of the game written in pure Haskell.
