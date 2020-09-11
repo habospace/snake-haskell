@@ -74,11 +74,11 @@ tick gs@(GameState w h (Snake body@((x, y):tail) d _) sc f fs gOver)
         body'    = head : if justAte then body else removeLast body
         sc'      = if justAte then sc + 1 else sc
         justAte  = head == f  
-        head     = corrigate w h $ (x+dx, y+dy)
+        head     = repositionSnakeHead w h $ (x+dx, y+dy)
         (dx, dy) = mapDirection d
 
-corrigate :: Int -> Int -> Location -> Location
-corrigate w h (x, y) = (x', y') where
+repositionSnakeHead :: Int -> Int -> Location -> Location
+repositionSnakeHead w h (x, y) = (x', y') where
   x' = if 1 <= x && x <= w then x else 
       if x > w 
         then x - w
