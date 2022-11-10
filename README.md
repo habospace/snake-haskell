@@ -1,4 +1,4 @@
-# snakeHaskell
+# snake-haskell
 
 This is my implementation of the popular snake game written in Haskell.
 The source code of the game is divided into the following 3 modules:
